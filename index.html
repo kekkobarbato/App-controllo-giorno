@@ -1,0 +1,1025 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>FlowTime — Time Tracking Zero Attrito</title>
+    <meta name="description" content="App di time-tracking personale con input manuale, timer e registro giornaliero, settimanale e mensile.">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'] },
+                }
+            }
+        }
+    </script>
+    <style>
+        :root {
+            --sys-blue: #007AFF;
+            --sys-green: #30D158;
+            --sys-orange: #FF9F0A;
+            --sys-red: #FF453A;
+            --sys-purple: #BF5AF2;
+            --sys-pink: #FF375F;
+            --sys-teal: #64D4FF;
+            --sys-indigo: #5E5CE6;
+            --sys-mint: #66D4CF;
+            --sys-cyan: #32D7E2;
+            --glass-bg: rgba(255, 255, 255, 0.55);
+            --glass-bg-thick: rgba(255, 255, 255, 0.72);
+            --glass-bg-thin: rgba(255, 255, 255, 0.35);
+            --glass-bg-ultra: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.45);
+            --glass-border-thin: rgba(255, 255, 255, 0.25);
+            --glass-shadow: rgba(0, 0, 0, 0.08);
+            --glass-shadow-heavy: rgba(0, 0, 0, 0.15);
+            --text-primary: #1C1C1E;
+            --text-secondary: #8E8E93;
+            --text-tertiary: #AEAEB2;
+            --separator: rgba(60, 60, 67, 0.12);
+        }
+        * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+            background: #F2F2F7;
+            color: var(--text-primary);
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+        .liquid-glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border: 0.5px solid var(--glass-border);
+            box-shadow: 0 0.5px 0 0 rgba(255,255,255,0.5) inset, 0 1px 3px var(--glass-shadow), 0 8px 24px var(--glass-shadow);
+        }
+        .liquid-glass-thick {
+            background: var(--glass-bg-thick);
+            backdrop-filter: blur(50px) saturate(200%);
+            -webkit-backdrop-filter: blur(50px) saturate(200%);
+            border: 0.5px solid var(--glass-border);
+            box-shadow: 0 0.5px 0 0 rgba(255,255,255,0.6) inset, 0 2px 8px var(--glass-shadow), 0 12px 32px var(--glass-shadow-heavy);
+        }
+        .liquid-glass-ultra {
+            background: var(--glass-bg-ultra);
+            backdrop-filter: blur(60px) saturate(200%);
+            -webkit-backdrop-filter: blur(60px) saturate(200%);
+            border: 0.5px solid var(--glass-border);
+            box-shadow: 0 0.5px 0 0 rgba(255,255,255,0.7) inset, 0 4px 16px var(--glass-shadow-heavy);
+        }
+        .wallpaper {
+            position: fixed; inset: 0; z-index: -1;
+            background:
+                radial-gradient(ellipse at 20% 0%, rgba(0,122,255,0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(191,90,242,0.12) 0%, transparent 45%),
+                radial-gradient(ellipse at 60% 80%, rgba(48,209,88,0.1) 0%, transparent 50%),
+                radial-gradient(ellipse at 10% 90%, rgba(255,159,10,0.08) 0%, transparent 40%),
+                linear-gradient(180deg, #E8E0F0 0%, #D4E4F7 30%, #E0EFE8 60%, #F2F2F7 100%);
+        }
+        .tab-bar {
+            position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 100;
+            display: flex; gap: 4px; padding: 6px; border-radius: 28px;
+            background: rgba(255,255,255,0.5);
+            backdrop-filter: blur(50px) saturate(200%);
+            -webkit-backdrop-filter: blur(50px) saturate(200%);
+            border: 0.5px solid rgba(255,255,255,0.5);
+            box-shadow: 0 0.5px 0 0 rgba(255,255,255,0.6) inset, 0 4px 16px rgba(0,0,0,0.08), 0 16px 48px rgba(0,0,0,0.12);
+        }
+        .tab-item {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            padding: 8px 18px; border-radius: 22px; cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
+            color: var(--text-secondary); user-select: none;
+        }
+        .tab-item.active { background: rgba(0,122,255,0.12); color: var(--sys-blue); }
+        .tab-item:active { transform: scale(0.92); }
+        .tab-item svg { width: 22px; height: 22px; }
+        .tab-item span { font-size: 10px; font-weight: 600; }
+        .ios-list {
+            background: var(--glass-bg-thick);
+            backdrop-filter: blur(40px) saturate(180%);
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            border-radius: 16px; overflow: hidden;
+            border: 0.5px solid var(--glass-border);
+            box-shadow: 0 1px 3px var(--glass-shadow);
+        }
+        .ios-list-item {
+            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+            transition: background 0.15s ease; position: relative;
+        }
+        .ios-list-item:not(:last-child)::after {
+            content: ''; position: absolute; bottom: 0; left: 56px; right: 0;
+            height: 0.5px; background: var(--separator);
+        }
+        .ios-list-item:active { background: rgba(0,0,0,0.04); }
+        @keyframes slideUp { from { opacity:0; transform: translateY(24px); } to { opacity:1; transform: translateY(0); } }
+        @keyframes scaleIn { from { opacity:0; transform: scale(0.92); } to { opacity:1; transform: scale(1); } }
+        @keyframes slideRight { from { opacity:0; transform: translateX(-12px); } to { opacity:1; transform: translateX(0); } }
+        @keyframes fillBar { from { width: 0%; } }
+        @keyframes breathe { 0%,100% { transform:scale(1); opacity:1; } 50% { transform:scale(1.4); opacity:0.4; } }
+        .slide-up { animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+        .scale-in { animation: scaleIn 0.4s cubic-bezier(0.16,1,0.3,1) both; }
+        .slide-right { animation: slideRight 0.35s cubic-bezier(0.16,1,0.3,1) both; }
+        .fill-animate { animation: fillBar 0.8s cubic-bezier(0.16,1,0.3,1) both; }
+        .ios-input {
+            width: 100%; padding: 12px 16px; font-size: 15px; font-weight: 400;
+            background: rgba(120,120,128,0.08); border: none; border-radius: 12px;
+            outline: none; color: var(--text-primary); transition: all 0.2s ease;
+            letter-spacing: -0.01em;
+        }
+        .ios-input:focus {
+            background: rgba(120,120,128,0.12);
+            box-shadow: 0 0 0 3.5px rgba(0,122,255,0.3);
+        }
+        .ios-input::placeholder { color: var(--text-tertiary); }
+        .ios-btn-primary {
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+            padding: 14px 24px; font-size: 17px; font-weight: 600; border-radius: 14px;
+            border: none; cursor: pointer; transition: all 0.2s cubic-bezier(0.4,0,0.2,1);
+            letter-spacing: -0.02em; user-select: none;
+        }
+        .ios-btn-primary:active { transform: scale(0.96); opacity: 0.85; }
+        .toast-ios {
+            position: fixed; top: 60px; left: 50%; transform: translateX(-50%); z-index: 200;
+            padding: 12px 20px; border-radius: 14px; font-size: 15px; font-weight: 600;
+            letter-spacing: -0.01em; pointer-events: none;
+        }
+        @keyframes toastSlide {
+            0% { opacity:0; transform: translateX(-50%) translateY(-16px) scale(0.95); }
+            10% { opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
+            85% { opacity:1; transform: translateX(-50%) translateY(0) scale(1); }
+            100% { opacity:0; transform: translateX(-50%) translateY(-8px) scale(0.97); }
+        }
+        .toast-animate { animation: toastSlide 2.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+        .timer-ring-bg { stroke: rgba(120,120,128,0.12); }
+        .timer-ring-fill { transition: stroke-dashoffset 0.5s cubic-bezier(0.4,0,0.2,1); transform: rotate(-90deg); transform-origin: center; }
+        ::-webkit-scrollbar { width: 0; }
+        .scroll-area { -webkit-overflow-scrolling: touch; }
+        .delta-overlay {
+            position: fixed; inset: 0; z-index: 150;
+            background: rgba(0,0,0,0.25); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            display: flex; align-items: flex-end; justify-content: center;
+        }
+        .delta-sheet {
+            width: 100%; max-width: 500px; max-height: 92vh; overflow-y: auto;
+            border-radius: 20px 20px 0 0; padding: 0 20px 40px 20px;
+        }
+        .delta-handle { width: 36px; height: 5px; background: rgba(60,60,67,0.2); border-radius: 3px; margin: 8px auto 16px auto; }
+        .page-container { padding-bottom: 100px; }
+        .cat-dot { width: 32px; height: 32px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+        /* Segmented Control */
+        .seg-control { display: inline-flex; background: rgba(120,120,128,0.12); border-radius: 9px; padding: 2px; width: 100%; }
+        .seg-btn { flex: 1; padding: 7px 0; text-align: center; font-size: 13px; font-weight: 600; color: var(--text-primary); border-radius: 7px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); user-select: none; border: none; background: none; }
+        .seg-btn.active { background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 3px 8px rgba(0,0,0,0.06); }
+        /* Form label */
+        .form-label { font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block; }
+        /* Day header in registry */
+        .day-header { font-size: 15px; font-weight: 700; color: var(--text-primary); padding: 12px 4px 6px 4px; letter-spacing: -0.01em; }
+        .day-total { font-size: 12px; font-weight: 600; color: var(--sys-blue); }
+        /* Nav arrows */
+        .nav-btn { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; border: none; background: rgba(120,120,128,0.08); color: var(--sys-blue); }
+        .nav-btn:active { transform: scale(0.9); background: rgba(0,122,255,0.1); }
+        /* Empty state */
+        .empty-state { text-align: center; padding: 40px 20px; }
+        .empty-state .emoji { font-size: 48px; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+    <div class="wallpaper"></div>
+    <div id="toast-container"></div>
+
+    <div class="max-w-lg mx-auto px-5 pt-6 page-container">
+
+        <!-- ===== HEADER ===== -->
+        <header id="app-header" class="flex items-center justify-between mb-2 slide-up">
+            <div>
+                <p id="header-greeting" class="text-[13px] font-semibold text-gray-400 tracking-wide"></p>
+                <h1 class="text-[34px] font-extrabold tracking-tight text-gray-900 leading-tight" style="letter-spacing:-0.02em;">FlowTime</h1>
+            </div>
+            <button id="btn-delta-open" onclick="openDelta()" class="w-10 h-10 rounded-full liquid-glass flex items-center justify-center transition-transform active:scale-90" title="Metodo Delta">
+                <svg width="20" height="20" fill="none" stroke="#FF9F0A" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/></svg>
+            </button>
+        </header>
+        <p id="header-date" class="text-[15px] font-semibold text-gray-500 mb-6 slide-up" style="animation-delay:0.04s; letter-spacing:-0.01em;"></p>
+
+        <!-- ===== PAGE: HOME ===== -->
+        <div id="page-home">
+
+            <!-- Stats -->
+            <div class="grid grid-cols-3 gap-3 mb-6 slide-up" style="animation-delay:0.08s;">
+                <div class="liquid-glass rounded-2xl p-3 text-center">
+                    <p id="stat-total" class="text-xl font-bold text-gray-900" style="letter-spacing:-0.02em;">0h 0m</p>
+                    <p class="text-[11px] font-semibold text-gray-400 mt-0.5">Totale oggi</p>
+                </div>
+                <div class="liquid-glass rounded-2xl p-3 text-center">
+                    <p id="stat-activities" class="text-xl font-bold" style="color:var(--sys-blue);letter-spacing:-0.02em;">0</p>
+                    <p class="text-[11px] font-semibold text-gray-400 mt-0.5">Attività</p>
+                </div>
+                <div class="liquid-glass rounded-2xl p-3 text-center">
+                    <p id="stat-timer" class="text-xl font-bold" style="color:var(--sys-green);letter-spacing:-0.02em;">0</p>
+                    <p class="text-[11px] font-semibold text-gray-400 mt-0.5">Via timer</p>
+                </div>
+            </div>
+
+            <!-- ===== ADD ACTIVITY FORM ===== -->
+            <div class="liquid-glass-thick rounded-[20px] p-5 mb-5 slide-up" style="animation-delay:0.12s;">
+                <h3 class="text-[17px] font-bold text-gray-900 mb-4" style="letter-spacing:-0.02em;">➕ Nuova attività</h3>
+
+                <div class="mb-3">
+                    <label class="form-label" for="input-name">Nome attività</label>
+                    <input id="input-name" type="text" class="ios-input" placeholder="es. Studio matematica, Riunione progetto Alpha..." autocomplete="off">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                        <label class="form-label" for="input-start">Ora inizio</label>
+                        <input id="input-start" type="time" class="ios-input" style="font-variant-numeric:tabular-nums;">
+                    </div>
+                    <div>
+                        <label class="form-label" for="input-end">Ora fine</label>
+                        <input id="input-end" type="time" class="ios-input" style="font-variant-numeric:tabular-nums;">
+                    </div>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label">Categoria</label>
+                    <div id="category-picker" class="flex flex-wrap gap-2"></div>
+                </div>
+
+                <button onclick="addManualActivity()" class="ios-btn-primary w-full" style="background:var(--sys-blue);color:white;font-size:15px;padding:13px 0;border-radius:14px;">
+                    Aggiungi attività
+                </button>
+                <p id="form-error" class="text-[12px] font-medium mt-2 hidden" style="color:var(--sys-red);"></p>
+            </div>
+
+            <!-- ===== TIMER ===== -->
+            <div id="timer-card" class="liquid-glass-thick rounded-[20px] p-5 mb-5 slide-up" style="animation-delay:0.16s;">
+                <h3 class="text-[17px] font-bold text-gray-900 mb-4" style="letter-spacing:-0.02em;">⏱ Timer</h3>
+                <div class="flex items-center gap-5">
+                    <div class="relative w-[88px] h-[88px] shrink-0">
+                        <svg class="w-full h-full" viewBox="0 0 88 88">
+                            <circle cx="44" cy="44" r="38" fill="none" stroke-width="5" class="timer-ring-bg"/>
+                            <circle id="timer-ring" cx="44" cy="44" r="38" fill="none" stroke-width="5" stroke-linecap="round" class="timer-ring-fill" style="stroke:var(--sys-green);" stroke-dasharray="238.76" stroke-dashoffset="238.76"/>
+                        </svg>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <span id="timer-display" class="text-[15px] font-bold text-gray-800 tabular-nums">00:00</span>
+                        </div>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <input id="timer-activity" type="text" placeholder="Nome attività..." value="" class="w-full bg-transparent text-[17px] font-bold text-gray-900 outline-none placeholder-gray-300 mb-3" style="letter-spacing:-0.02em;" />
+                        <div class="flex gap-2">
+                            <button id="btn-start" onclick="startTimer()" class="ios-btn-primary flex-1" style="background:var(--sys-green);color:white;padding:10px 0;font-size:15px;border-radius:12px;">
+                                <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                Start
+                            </button>
+                            <button id="btn-stop" onclick="stopTimer()" class="ios-btn-primary flex-1 opacity-30 pointer-events-none" style="background:var(--sys-red);color:white;padding:10px 0;font-size:15px;border-radius:12px;">
+                                <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><rect x="6" y="6" width="12" height="12" rx="2.5"/></svg>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== TODAY'S ACTIVITIES ===== -->
+            <div class="flex items-center justify-between mb-2 slide-up" style="animation-delay:0.2s;">
+                <h2 class="text-[20px] font-bold text-gray-900" style="letter-spacing:-0.02em;">Oggi</h2>
+                <span id="today-count" class="text-[13px] font-semibold text-gray-400">0 attività</span>
+            </div>
+            <div id="activity-feed" class="mb-4 slide-up" style="animation-delay:0.24s;"></div>
+            <div id="feed-empty" class="liquid-glass rounded-2xl p-8 text-center hidden slide-up" style="animation-delay:0.24s;">
+                <div class="text-4xl mb-2">📝</div>
+                <p class="text-[15px] font-semibold text-gray-500">Nessuna attività oggi</p>
+                <p class="text-[13px] text-gray-400 mt-0.5">Compila il form qui sopra per registrare la tua prima attività</p>
+            </div>
+        </div>
+
+        <!-- ===== PAGE: REGISTRO ===== -->
+        <div id="page-registro" class="hidden">
+            <h2 class="text-[28px] font-bold text-gray-900 mb-1" style="letter-spacing:-0.02em;">Registro</h2>
+            <p class="text-[15px] text-gray-400 font-medium mb-4">Storico delle tue attività</p>
+
+            <!-- Period Segmented Control -->
+            <div class="seg-control mb-4 scale-in">
+                <button class="seg-btn active" onclick="switchRegistroPeriod('day')" id="seg-day">Giorno</button>
+                <button class="seg-btn" onclick="switchRegistroPeriod('week')" id="seg-week">Settimana</button>
+                <button class="seg-btn" onclick="switchRegistroPeriod('month')" id="seg-month">Mese</button>
+            </div>
+
+            <!-- Navigation -->
+            <div class="flex items-center justify-between mb-4 scale-in" style="animation-delay:0.04s;">
+                <button class="nav-btn" onclick="navigateRegistro(-1)">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/></svg>
+                </button>
+                <span id="registro-title" class="text-[17px] font-bold text-gray-900" style="letter-spacing:-0.01em;"></span>
+                <button class="nav-btn" onclick="navigateRegistro(1)">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/></svg>
+                </button>
+            </div>
+
+            <!-- Summary Card -->
+            <div id="registro-summary" class="liquid-glass rounded-2xl p-4 mb-4 scale-in" style="animation-delay:0.08s;"></div>
+
+            <!-- Chart -->
+            <div id="registro-chart-wrap" class="liquid-glass rounded-2xl p-4 mb-4 scale-in" style="animation-delay:0.12s;">
+                <canvas id="registroChart" style="max-height:200px;"></canvas>
+            </div>
+
+            <!-- Activities List -->
+            <div id="registro-list" class="scale-in" style="animation-delay:0.16s;"></div>
+        </div>
+    </div>
+
+    <!-- ===== FLOATING TAB BAR ===== -->
+    <nav class="tab-bar">
+        <div class="tab-item active" onclick="switchPage('home')" id="tab-home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            <span>Home</span>
+        </div>
+        <div class="tab-item" onclick="switchPage('registro')" id="tab-registro">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"/></svg>
+            <span>Registro</span>
+        </div>
+        <div class="tab-item" onclick="openDelta()" id="tab-delta">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 14.25v2.25m3-4.5v4.5m3-6.75v6.75m3-9v9M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z"/></svg>
+            <span>Delta</span>
+        </div>
+    </nav>
+
+    <!-- ===== DELTA METHOD SHEET ===== -->
+    <div id="delta-overlay" class="delta-overlay hidden" style="opacity:0;transition:opacity 0.3s ease;" onclick="closeDeltaOutside(event)">
+        <div id="delta-sheet" class="delta-sheet liquid-glass-ultra" style="transform:translateY(100%);transition:transform 0.4s cubic-bezier(0.16,1,0.3,1);">
+            <div class="delta-handle"></div>
+            <div class="flex items-center justify-between mb-1">
+                <h2 class="text-[22px] font-bold text-gray-900" style="letter-spacing:-0.02em;">🌙 Metodo Delta</h2>
+                <button onclick="closeDelta()" class="w-8 h-8 rounded-full flex items-center justify-center" style="background:rgba(120,120,128,0.12);">
+                    <svg width="14" height="14" fill="none" stroke="#8E8E93" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p class="text-[13px] text-gray-400 font-medium mb-5">Conferma la tua giornata con un solo tap</p>
+            <div class="liquid-glass rounded-2xl p-4 mb-4">
+                <canvas id="deltaChart" style="max-height:240px;"></canvas>
+            </div>
+            <div id="delta-breakdown" class="space-y-2 mb-4"></div>
+            <div class="flex items-center justify-between px-4 py-3 rounded-2xl mb-5" style="background:rgba(120,120,128,0.06);">
+                <span class="text-[13px] font-bold text-gray-400 uppercase tracking-wider">Totale</span>
+                <span id="delta-total" class="text-[22px] font-bold text-gray-900" style="letter-spacing:-0.02em;">0h 0m</span>
+            </div>
+            <button id="btn-delta-confirm" onclick="confirmDelta()" class="w-full py-[16px] rounded-2xl text-[17px] font-bold text-white transition-all active:scale-[0.97]" style="background:linear-gradient(135deg,var(--sys-blue),var(--sys-purple));letter-spacing:-0.01em;box-shadow:0 4px 16px rgba(0,122,255,0.3);">
+                ✓ Confermo — Giornata OK
+            </button>
+            <p class="text-center text-[11px] text-gray-400 mt-2 mb-4">Puoi modificare le attività prima di confermare</p>
+        </div>
+    </div>
+
+    <script>
+    // ============================================================
+    //  STATE
+    // ============================================================
+    const CATEGORIES = {
+        studio:    { icon:'📚', label:'Studio',       color:'#5E5CE6' },
+        lavoro:    { icon:'💼', label:'Lavoro',       color:'#007AFF' },
+        palestra:  { icon:'🏋️', label:'Palestra',     color:'#30D158' },
+        pausa:     { icon:'☕', label:'Pausa',        color:'#FF9F0A' },
+        riunione:  { icon:'🤝', label:'Riunione',    color:'#FF453A' },
+        coding:    { icon:'💻', label:'Coding',       color:'#32D7E2' },
+        lettura:   { icon:'📖', label:'Lettura',      color:'#BF5AF2' },
+        sport:     { icon:'⚽', label:'Sport',        color:'#66D4CF' },
+        social:    { icon:'📱', label:'Social',       color:'#FF375F' },
+        altro:     { icon:'📌', label:'Altro',        color:'#8E8E93' },
+    };
+
+    let activities = loadFromStorage();
+    let selectedCategory = 'altro';
+    let timerRunning = false, timerStart = null, timerInterval = null, timerElapsed = 0;
+    let deltaChartInstance = null, registroChartInstance = null;
+    let currentPage = 'home';
+
+    // Registro state
+    let registroPeriod = 'day'; // 'day' | 'week' | 'month'
+    let registroOffset = 0; // 0 = current period, -1 = previous, etc.
+
+    // ============================================================
+    //  INIT
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        updateHeader();
+        setInterval(updateHeader, 60000);
+        buildCategoryPicker();
+        prefillTimes();
+        renderTodayFeed();
+        updateStats();
+    });
+
+    function updateHeader() {
+        const now = new Date();
+        const h = now.getHours();
+        document.getElementById('header-greeting').textContent =
+            (h < 12 ? 'BUONGIORNO' : h < 18 ? 'BUON POMERIGGIO' : 'BUONASERA');
+        const opts = { weekday:'long', day:'numeric', month:'long' };
+        const d = now.toLocaleDateString('it-IT', opts);
+        document.getElementById('header-date').textContent = d.charAt(0).toUpperCase() + d.slice(1);
+    }
+
+    function prefillTimes() {
+        const now = new Date();
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('input-end').value = `${hh}:${mm}`;
+        // Start = 1 hour ago
+        const ago = new Date(now.getTime() - 3600000);
+        document.getElementById('input-start').value =
+            `${String(ago.getHours()).padStart(2,'0')}:${String(ago.getMinutes()).padStart(2,'0')}`;
+    }
+
+    // ============================================================
+    //  STORAGE
+    // ============================================================
+    function loadFromStorage() {
+        try {
+            const raw = localStorage.getItem('flowtime_activities');
+            if (raw) {
+                const arr = JSON.parse(raw);
+                // Restore date objects
+                return arr.map(a => ({
+                    ...a,
+                    startTime: new Date(a.startTime),
+                    endTime: new Date(a.endTime),
+                    timestamp: new Date(a.timestamp),
+                }));
+            }
+        } catch(e) {}
+        return [];
+    }
+
+    function saveToStorage() {
+        localStorage.setItem('flowtime_activities', JSON.stringify(activities));
+    }
+
+    // ============================================================
+    //  CATEGORY PICKER
+    // ============================================================
+    function buildCategoryPicker() {
+        const el = document.getElementById('category-picker');
+        el.innerHTML = Object.entries(CATEGORIES).map(([key, cat]) => `
+            <button onclick="selectCategory('${key}')" id="cat-btn-${key}"
+                class="flex items-center gap-1.5 px-3 py-2 rounded-xl text-[13px] font-semibold transition-all active:scale-95"
+                style="background: ${key === selectedCategory ? cat.color + '18' : 'rgba(120,120,128,0.06)'};
+                       color: ${key === selectedCategory ? cat.color : '#8E8E93'};
+                       ${key === selectedCategory ? 'box-shadow: 0 0 0 2px ' + cat.color + '40;' : ''}">
+                <span>${cat.icon}</span> ${cat.label}
+            </button>
+        `).join('');
+    }
+
+    function selectCategory(key) {
+        selectedCategory = key;
+        buildCategoryPicker();
+    }
+
+    // ============================================================
+    //  ADD ACTIVITY (manual form)
+    // ============================================================
+    function addManualActivity() {
+        const name = document.getElementById('input-name').value.trim();
+        const startVal = document.getElementById('input-start').value;
+        const endVal = document.getElementById('input-end').value;
+
+        // Validation
+        if (!name) return showFormError('Inserisci il nome dell\'attività');
+        if (!startVal) return showFormError('Inserisci l\'ora di inizio');
+        if (!endVal) return showFormError('Inserisci l\'ora di fine');
+
+        const today = new Date();
+        const [sh, sm] = startVal.split(':').map(Number);
+        const [eh, em] = endVal.split(':').map(Number);
+
+        const startTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), sh, sm, 0);
+        const endTime = new Date(today.getFullYear(), today.getMonth(), today.getDate(), eh, em, 0);
+
+        // Handle overnight (end < start means next day)
+        if (endTime <= startTime) {
+            return showFormError('L\'ora di fine deve essere dopo l\'ora di inizio');
+        }
+
+        const minutes = Math.round((endTime - startTime) / 60000);
+        if (minutes < 1) return showFormError('L\'attività deve durare almeno 1 minuto');
+
+        const cat = CATEGORIES[selectedCategory] || CATEGORIES.altro;
+        const activity = {
+            id: Date.now() + Math.random(),
+            category: selectedCategory,
+            label: name,
+            icon: cat.icon,
+            color: cat.color,
+            minutes,
+            source: 'manual',
+            startTime,
+            endTime,
+            timestamp: new Date(),
+        };
+
+        activities.unshift(activity);
+        saveToStorage();
+        renderTodayFeed();
+        updateStats();
+        showToast(`✓ ${name} — ${formatMinutes(minutes)}`, 'success');
+
+        // Reset form
+        document.getElementById('input-name').value = '';
+        hideFormError();
+        prefillTimes();
+    }
+
+    function showFormError(msg) {
+        const el = document.getElementById('form-error');
+        el.textContent = msg;
+        el.classList.remove('hidden');
+    }
+    function hideFormError() {
+        document.getElementById('form-error').classList.add('hidden');
+    }
+
+    // ============================================================
+    //  REMOVE ACTIVITY
+    // ============================================================
+    function removeActivity(id) {
+        activities = activities.filter(a => a.id !== id);
+        saveToStorage();
+        renderTodayFeed();
+        updateStats();
+        if (currentPage === 'registro') renderRegistro();
+        showToast('Attività rimossa', 'info');
+    }
+
+    // ============================================================
+    //  TODAY'S FEED
+    // ============================================================
+    function getTodayActivities() {
+        const now = new Date();
+        const todayStr = dateKey(now);
+        return activities.filter(a => dateKey(a.startTime) === todayStr);
+    }
+
+    function renderTodayFeed() {
+        const todayActs = getTodayActivities();
+        const feed = document.getElementById('activity-feed');
+        const empty = document.getElementById('feed-empty');
+        document.getElementById('today-count').textContent = `${todayActs.length} attività`;
+
+        if (todayActs.length === 0) {
+            feed.innerHTML = '';
+            empty.classList.remove('hidden');
+            return;
+        }
+        empty.classList.add('hidden');
+
+        // Sort by start time
+        const sorted = [...todayActs].sort((a, b) => a.startTime - b.startTime);
+
+        let html = '<div class="ios-list">';
+        html += sorted.map((a, i) => {
+            const badge = a.source === 'timer'
+                ? '<span class="text-[10px] font-bold px-1.5 py-0.5 rounded-md" style="background:rgba(48,209,88,0.1);color:var(--sys-green);">TIMER</span>'
+                : '';
+            return `
+                <div class="ios-list-item group slide-right" style="animation-delay:${i*0.03}s;">
+                    <div class="cat-dot" style="background:${a.color}15;">${a.icon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[15px] font-semibold text-gray-900" style="letter-spacing:-0.01em;">${escHtml(a.label)}</span>
+                            ${badge}
+                        </div>
+                        <span class="text-[12px] text-gray-400 font-medium">${formatTime(a.startTime)} — ${formatTime(a.endTime)} · ${formatMinutes(a.minutes)}</span>
+                    </div>
+                    <button onclick="removeActivity(${a.id})" class="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-opacity shrink-0" style="color:var(--sys-red);">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
+                </div>`;
+        }).join('');
+        html += '</div>';
+        feed.innerHTML = html;
+    }
+
+    // ============================================================
+    //  TIMER
+    // ============================================================
+    function startTimer() {
+        if (timerRunning) return;
+        const name = document.getElementById('timer-activity').value.trim();
+        if (!name) { showToast('Inserisci un nome per il timer', 'error'); return; }
+        timerRunning = true;
+        timerStart = Date.now();
+        timerElapsed = 0;
+        document.getElementById('btn-start').classList.add('opacity-30','pointer-events-none');
+        document.getElementById('btn-stop').classList.remove('opacity-30','pointer-events-none');
+        document.getElementById('timer-activity').setAttribute('readonly', true);
+        document.getElementById('timer-card').style.boxShadow = '0 0 0 2px var(--sys-green), 0 4px 16px rgba(48,209,88,0.15)';
+        timerInterval = setInterval(() => {
+            timerElapsed = Date.now() - timerStart;
+            const totalSecs = Math.floor(timerElapsed / 1000);
+            const m = Math.floor(totalSecs / 60);
+            const s = totalSecs % 60;
+            document.getElementById('timer-display').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+            const pct = Math.min(1, m / 60);
+            document.getElementById('timer-ring').style.strokeDashoffset = 238.76 * (1 - pct);
+        }, 250);
+        showToast('⏱ Timer avviato', 'success');
+    }
+
+    function stopTimer() {
+        if (!timerRunning) return;
+        timerRunning = false;
+        clearInterval(timerInterval);
+        const minutes = Math.max(1, Math.round(timerElapsed / 60000));
+        const actName = document.getElementById('timer-activity').value.trim() || 'Attività';
+        const now = new Date();
+        const startTime = new Date(now.getTime() - timerElapsed);
+        const cat = CATEGORIES[selectedCategory] || CATEGORIES.altro;
+        const activity = {
+            id: Date.now() + Math.random(),
+            category: selectedCategory,
+            label: actName,
+            icon: cat.icon, color: cat.color,
+            minutes, source: 'timer',
+            startTime, endTime: now, timestamp: now,
+        };
+        activities.unshift(activity);
+        saveToStorage();
+        renderTodayFeed();
+        updateStats();
+        document.getElementById('btn-start').classList.remove('opacity-30','pointer-events-none');
+        document.getElementById('btn-stop').classList.add('opacity-30','pointer-events-none');
+        document.getElementById('timer-activity').removeAttribute('readonly');
+        document.getElementById('timer-display').textContent = '00:00';
+        document.getElementById('timer-ring').style.strokeDashoffset = '238.76';
+        document.getElementById('timer-card').style.boxShadow = '';
+        showToast(`⏱ ${actName} — ${formatMinutes(minutes)}`, 'success');
+    }
+
+    // ============================================================
+    //  STATS
+    // ============================================================
+    function updateStats() {
+        const todayActs = getTodayActivities();
+        let totalMin = 0, timerCount = 0;
+        todayActs.forEach(a => {
+            totalMin += a.minutes;
+            if (a.source === 'timer') timerCount++;
+        });
+        document.getElementById('stat-total').textContent = formatMinutes(totalMin);
+        document.getElementById('stat-activities').textContent = todayActs.length;
+        document.getElementById('stat-timer').textContent = timerCount;
+    }
+
+    // ============================================================
+    //  PAGES
+    // ============================================================
+    function switchPage(page) {
+        currentPage = page;
+        document.getElementById('page-home').classList.toggle('hidden', page !== 'home');
+        document.getElementById('page-registro').classList.toggle('hidden', page !== 'registro');
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab-${page}`).classList.add('active');
+        if (page === 'registro') {
+            registroOffset = 0;
+            renderRegistro();
+        }
+    }
+
+    // ============================================================
+    //  REGISTRO
+    // ============================================================
+    function switchRegistroPeriod(period) {
+        registroPeriod = period;
+        registroOffset = 0;
+        document.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`seg-${period}`).classList.add('active');
+        renderRegistro();
+    }
+
+    function navigateRegistro(dir) {
+        registroOffset += dir;
+        renderRegistro();
+    }
+
+    function renderRegistro() {
+        const { startDate, endDate, title } = getRegistroPeriodRange();
+        document.getElementById('registro-title').textContent = title;
+
+        // Filter activities in range
+        const rangeActs = activities.filter(a => {
+            const d = a.startTime;
+            return d >= startDate && d < endDate;
+        }).sort((a, b) => a.startTime - b.startTime);
+
+        // Summary
+        renderRegistroSummary(rangeActs);
+        // Chart
+        renderRegistroChart(rangeActs);
+        // List
+        renderRegistroList(rangeActs);
+    }
+
+    function getRegistroPeriodRange() {
+        const now = new Date();
+        let startDate, endDate, title;
+
+        if (registroPeriod === 'day') {
+            const d = new Date(now);
+            d.setDate(d.getDate() + registroOffset);
+            startDate = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+            endDate = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1, 0, 0, 0);
+            const opts = { weekday:'long', day:'numeric', month:'long' };
+            const s = d.toLocaleDateString('it-IT', opts);
+            title = registroOffset === 0 ? 'Oggi' : registroOffset === -1 ? 'Ieri' : s.charAt(0).toUpperCase() + s.slice(1);
+        } else if (registroPeriod === 'week') {
+            const d = new Date(now);
+            d.setDate(d.getDate() + registroOffset * 7);
+            const day = d.getDay();
+            const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+            startDate = new Date(d.getFullYear(), d.getMonth(), diff, 0, 0, 0);
+            endDate = new Date(startDate);
+            endDate.setDate(endDate.getDate() + 7);
+            const s1 = startDate.toLocaleDateString('it-IT', { day:'numeric', month:'short' });
+            const s2 = new Date(endDate.getTime() - 86400000).toLocaleDateString('it-IT', { day:'numeric', month:'short' });
+            title = registroOffset === 0 ? `Questa settimana` : `${s1} — ${s2}`;
+        } else {
+            const d = new Date(now.getFullYear(), now.getMonth() + registroOffset, 1);
+            startDate = new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0);
+            endDate = new Date(d.getFullYear(), d.getMonth() + 1, 1, 0, 0, 0);
+            const s = d.toLocaleDateString('it-IT', { month:'long', year:'numeric' });
+            title = s.charAt(0).toUpperCase() + s.slice(1);
+        }
+
+        return { startDate, endDate, title };
+    }
+
+    function renderRegistroSummary(acts) {
+        const el = document.getElementById('registro-summary');
+        let totalMin = 0;
+        const catMap = {};
+        acts.forEach(a => {
+            totalMin += a.minutes;
+            catMap[a.category] = (catMap[a.category] || 0) + a.minutes;
+        });
+
+        if (acts.length === 0) {
+            el.innerHTML = `
+                <div class="empty-state">
+                    <div class="emoji">📭</div>
+                    <p class="text-[15px] font-semibold text-gray-500">Nessuna attività in questo periodo</p>
+                </div>`;
+            return;
+        }
+
+        // Top category
+        const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+        const topCat = CATEGORIES[sorted[0][0]] || CATEGORIES.altro;
+
+        el.innerHTML = `
+            <div class="grid grid-cols-3 gap-3 text-center">
+                <div>
+                    <p class="text-[20px] font-bold text-gray-900" style="letter-spacing:-0.02em;">${formatMinutes(totalMin)}</p>
+                    <p class="text-[11px] font-semibold text-gray-400">Totale</p>
+                </div>
+                <div>
+                    <p class="text-[20px] font-bold" style="color:var(--sys-blue);letter-spacing:-0.02em;">${acts.length}</p>
+                    <p class="text-[11px] font-semibold text-gray-400">Attività</p>
+                </div>
+                <div>
+                    <p class="text-[20px] font-bold" style="letter-spacing:-0.02em;">${topCat.icon}</p>
+                    <p class="text-[11px] font-semibold text-gray-400">Top: ${topCat.label}</p>
+                </div>
+            </div>`;
+    }
+
+    function renderRegistroChart(acts) {
+        const catMap = {};
+        acts.forEach(a => { catMap[a.category] = (catMap[a.category] || 0) + a.minutes; });
+        const labels = [], data = [], colors = [];
+        for (const [cat, mins] of Object.entries(catMap)) {
+            const c = CATEGORIES[cat] || CATEGORIES.altro;
+            labels.push(`${c.icon} ${c.label}`);
+            data.push(mins);
+            colors.push(c.color);
+        }
+        if (!data.length) { labels.push('Nessuna'); data.push(1); colors.push('#E5E5EA'); }
+
+        const ctx = document.getElementById('registroChart').getContext('2d');
+        if (registroChartInstance) registroChartInstance.destroy();
+        registroChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderColor:'rgba(255,255,255,0.8)', borderWidth:2.5, borderRadius:6, spacing:3 }] },
+            options: {
+                responsive: true, maintainAspectRatio: true, cutout:'65%',
+                plugins: {
+                    legend: { position:'bottom', labels: { color:'#8E8E93', font:{ family:'Inter', size:11, weight:'600' }, padding:12, usePointStyle:true, pointStyleWidth:8 } },
+                    tooltip: { backgroundColor:'rgba(255,255,255,0.92)', titleColor:'#1C1C1E', bodyColor:'#1C1C1E', titleFont:{ family:'Inter', weight:'700', size:13 }, bodyFont:{ family:'Inter', size:12 }, padding:12, cornerRadius:12, borderColor:'rgba(0,0,0,0.06)', borderWidth:1, callbacks:{ label: ctx => ` ${formatMinutes(ctx.parsed)}` } }
+                },
+                animation: { animateRotate:true, duration:700, easing:'easeOutQuart' }
+            }
+        });
+    }
+
+    function renderRegistroList(acts) {
+        const el = document.getElementById('registro-list');
+        if (acts.length === 0) { el.innerHTML = ''; return; }
+
+        // Group by day
+        const groups = {};
+        acts.forEach(a => {
+            const key = dateKey(a.startTime);
+            if (!groups[key]) groups[key] = [];
+            groups[key].push(a);
+        });
+
+        let html = '';
+        const sortedDays = Object.keys(groups).sort((a, b) => b.localeCompare(a));
+
+        sortedDays.forEach(day => {
+            const dayActs = groups[day].sort((a, b) => a.startTime - b.startTime);
+            const dayTotal = dayActs.reduce((s, a) => s + a.minutes, 0);
+            const d = new Date(day);
+            const dayLabel = d.toLocaleDateString('it-IT', { weekday:'long', day:'numeric', month:'long' });
+
+            html += `<div class="flex items-center justify-between mb-1 mt-3">
+                <span class="day-header">${dayLabel.charAt(0).toUpperCase() + dayLabel.slice(1)}</span>
+                <span class="day-total">${formatMinutes(dayTotal)}</span>
+            </div>`;
+            html += '<div class="ios-list mb-2">';
+            dayActs.forEach(a => {
+                html += `
+                    <div class="ios-list-item group">
+                        <div class="cat-dot" style="background:${a.color}15;">${a.icon}</div>
+                        <div class="flex-1 min-w-0">
+                            <span class="text-[14px] font-semibold text-gray-900 block" style="letter-spacing:-0.01em;">${escHtml(a.label)}</span>
+                            <span class="text-[12px] text-gray-400 font-medium">${formatTime(a.startTime)} — ${formatTime(a.endTime)} · ${formatMinutes(a.minutes)}</span>
+                        </div>
+                        <button onclick="removeActivity(${a.id})" class="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg transition-opacity shrink-0" style="color:var(--sys-red);">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                    </div>`;
+            });
+            html += '</div>';
+        });
+
+        el.innerHTML = html;
+    }
+
+    // ============================================================
+    //  DELTA METHOD
+    // ============================================================
+    function openDelta() {
+        const overlay = document.getElementById('delta-overlay');
+        const sheet = document.getElementById('delta-sheet');
+        overlay.classList.remove('hidden');
+        requestAnimationFrame(() => {
+            overlay.style.opacity = '1';
+            sheet.style.transform = 'translateY(0)';
+        });
+        buildDeltaChart();
+        buildDeltaBreakdown();
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-delta').classList.add('active');
+        // Reset confirm btn
+        const btn = document.getElementById('btn-delta-confirm');
+        btn.innerHTML = '✓ Confermo — Giornata OK';
+        btn.style.background = 'linear-gradient(135deg, var(--sys-blue), var(--sys-purple))';
+        btn.style.boxShadow = '0 4px 16px rgba(0,122,255,0.3)';
+        btn.classList.remove('pointer-events-none');
+    }
+
+    function closeDelta() {
+        const overlay = document.getElementById('delta-overlay');
+        const sheet = document.getElementById('delta-sheet');
+        overlay.style.opacity = '0';
+        sheet.style.transform = 'translateY(100%)';
+        setTimeout(() => overlay.classList.add('hidden'), 350);
+        document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+        document.getElementById(`tab-${currentPage}`).classList.add('active');
+    }
+
+    function closeDeltaOutside(e) { if (e.target === document.getElementById('delta-overlay')) closeDelta(); }
+
+    function buildDeltaChart() {
+        const todayActs = getTodayActivities();
+        const catMap = {};
+        todayActs.forEach(a => { catMap[a.category] = (catMap[a.category] || 0) + a.minutes; });
+        const labels = [], data = [], colors = [];
+        for (const [cat, mins] of Object.entries(catMap)) {
+            const c = CATEGORIES[cat] || CATEGORIES.altro;
+            labels.push(`${c.icon} ${c.label}`);
+            data.push(mins); colors.push(c.color);
+        }
+        if (!data.length) { labels.push('Nessuna'); data.push(1); colors.push('#E5E5EA'); }
+
+        const ctx = document.getElementById('deltaChart').getContext('2d');
+        if (deltaChartInstance) deltaChartInstance.destroy();
+        deltaChartInstance = new Chart(ctx, {
+            type: 'doughnut',
+            data: { labels, datasets: [{ data, backgroundColor: colors, borderColor:'rgba(255,255,255,0.8)', borderWidth:2.5, borderRadius:6, spacing:3 }] },
+            options: {
+                responsive:true, maintainAspectRatio:true, cutout:'68%',
+                plugins: {
+                    legend: { position:'bottom', labels: { color:'#8E8E93', font:{ family:'Inter', size:11, weight:'600' }, padding:14, usePointStyle:true, pointStyleWidth:8 } },
+                    tooltip: { backgroundColor:'rgba(255,255,255,0.92)', titleColor:'#1C1C1E', bodyColor:'#1C1C1E', titleFont:{ family:'Inter', weight:'700', size:13 }, bodyFont:{ family:'Inter', size:12 }, padding:12, cornerRadius:12, borderColor:'rgba(0,0,0,0.06)', borderWidth:1, displayColors:true, boxPadding:4, callbacks:{ label: ctx => ` ${formatMinutes(ctx.parsed)}` } }
+                },
+                animation: { animateRotate:true, duration:900, easing:'easeOutQuart' }
+            }
+        });
+    }
+
+    function buildDeltaBreakdown() {
+        const todayActs = getTodayActivities();
+        const catMap = {};
+        let totalMin = 0;
+        todayActs.forEach(a => {
+            catMap[a.category] = (catMap[a.category] || 0) + a.minutes;
+            totalMin += a.minutes;
+        });
+        document.getElementById('delta-total').textContent = formatMinutes(totalMin);
+        const el = document.getElementById('delta-breakdown');
+        if (!Object.keys(catMap).length) {
+            el.innerHTML = '<p class="text-[14px] text-gray-400 text-center py-6">Nessuna attività oggi</p>';
+            return;
+        }
+        const sorted = Object.entries(catMap).sort((a, b) => b[1] - a[1]);
+        el.innerHTML = sorted.map(([cat, mins]) => {
+            const c = CATEGORIES[cat] || CATEGORIES.altro;
+            const pct = totalMin > 0 ? Math.round((mins / totalMin) * 100) : 0;
+            return `
+                <div class="flex items-center gap-3 px-1 py-1.5">
+                    <div class="cat-dot shrink-0" style="background:${c.color}15;">${c.icon}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[14px] font-semibold text-gray-800">${c.label}</span>
+                            <span class="text-[14px] font-bold tabular-nums" style="color:${c.color};">${formatMinutes(mins)}</span>
+                        </div>
+                        <div class="w-full h-[5px] rounded-full overflow-hidden" style="background:rgba(120,120,128,0.08);">
+                            <div class="h-full rounded-full fill-animate" style="width:${pct}%;background:${c.color};"></div>
+                        </div>
+                    </div>
+                    <span class="text-[11px] font-bold text-gray-400 tabular-nums w-9 text-right">${pct}%</span>
+                </div>`;
+        }).join('');
+    }
+
+    function confirmDelta() {
+        const btn = document.getElementById('btn-delta-confirm');
+        btn.innerHTML = '✓ Giornata confermata!';
+        btn.style.background = 'var(--sys-green)';
+        btn.style.boxShadow = '0 4px 16px rgba(48,209,88,0.3)';
+        btn.classList.add('pointer-events-none');
+        showToast('🌙 Giornata confermata!', 'success');
+        setTimeout(() => closeDelta(), 1200);
+    }
+
+    // ============================================================
+    //  TOAST
+    // ============================================================
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toast-container');
+        const toast = document.createElement('div');
+        const bg = type === 'success' ? 'rgba(48,209,88,0.14)' : type === 'error' ? 'rgba(255,69,58,0.14)' : 'rgba(0,122,255,0.14)';
+        const color = type === 'success' ? 'var(--sys-green)' : type === 'error' ? 'var(--sys-red)' : 'var(--sys-blue)';
+        const border = type === 'success' ? 'rgba(48,209,88,0.2)' : type === 'error' ? 'rgba(255,69,58,0.2)' : 'rgba(0,122,255,0.2)';
+        toast.className = 'toast-ios liquid-glass-thick toast-animate';
+        toast.style.cssText = `background:${bg};color:${color};border:0.5px solid ${border};`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 2600);
+    }
+
+    // ============================================================
+    //  HELPERS
+    // ============================================================
+    function formatMinutes(mins) {
+        const h = Math.floor(mins / 60);
+        const m = mins % 60;
+        if (h > 0 && m > 0) return `${h}h ${m}m`;
+        if (h > 0) return `${h}h`;
+        return `${m}m`;
+    }
+    function formatTime(date) {
+        return date.toLocaleTimeString('it-IT', { hour:'2-digit', minute:'2-digit' });
+    }
+    function dateKey(date) {
+        return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    }
+    function escHtml(str) {
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+    </script>
+</body>
+</html>
